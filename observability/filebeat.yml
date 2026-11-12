@@ -1,0 +1,21 @@
+filebeat.inputs:
+  - type: filestream
+    id: pipeline-final-ndjson
+    enabled: true
+    paths: ["/logs/*.ndjson"]
+    prospector.scanner.check_interval: 2s
+    parsers:
+      - ndjson:
+          target: ""
+          add_error_key: true
+          overwrite_keys: true
+setup.ilm.enabled: false
+setup.template.name: pipeline-final
+setup.template.pattern: pipeline-final-*
+setup.template.settings:
+  index.number_of_shards: 1
+  index.number_of_replicas: 0
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  index: "pipeline-final-%{+yyyy.MM.dd}"
+logging.level: warning

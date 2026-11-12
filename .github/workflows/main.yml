@@ -1,0 +1,82 @@
+name: CI e CD academico
+on:
+  push:
+    branches: ['fm/unama-devops-entrega']
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+concurrency:
+  group: pipeline-final-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validar-publicar-implantar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+      TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Testes automatizados
+        run: node --test app/server.test.js
+      - name: Build Docker
+        run: docker build --pull -t "$IMAGE:$TAG" app
+      - name: Login efemero e push no GHCR privado
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE:$TAG"
+          docker logout ghcr.io
+      - name: Ferramentas do cluster efemero
+        run: |
+          curl -fL --retry 2 https://kind.sigs.k8s.io/dl/v0.31.0/kind-linux-amd64 -o /tmp/kind
+          chmod +x /tmp/kind
+          curl -fL --retry 2 https://get.helm.sh/helm-v3.16.3-linux-amd64.tar.gz -o /tmp/helm.tar.gz
+          tar -xzf /tmp/helm.tar.gz -C /tmp
+          sudo install /tmp/linux-amd64/helm /usr/local/bin/helm
+      - name: CD automatico com Helm no Kind do runner
+        run: |
+          mkdir -p /tmp/pipeline-final-logs
+          chmod 0777 /tmp/pipeline-final-logs
+          cat > /tmp/kind.yaml <<'EOF'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          networking:
+            apiServerAddress: 127.0.0.1
+          nodes:
+            - role: control-plane
+              extraPortMappings:
+                - containerPort: 30080
+                  hostPort: 18080
+                  listenAddress: 127.0.0.1
+              extraMounts:
+                - hostPath: /tmp/pipeline-final-logs
+                  containerPath: /var/log/pipeline-final
+          EOF
+          /tmp/kind create cluster --name unama-pipeline-final --image kindest/node:v1.34.0 --config /tmp/kind.yaml --wait 180s
+          # A imagem acabou de ser publicada; o carregamento evita credenciais persistentes no cluster.
+          /tmp/kind load docker-image --name unama-pipeline-final "$IMAGE:$TAG"
+          helm lint helm/pipeline-final
+          helm upgrade --install unama-final helm/pipeline-final --kube-context kind-unama-pipeline-final \
+            --namespace pipeline-final --create-namespace --set image.repository="$IMAGE" --set-string image.tag="$TAG" --wait --timeout 180s
+          kubectl --context kind-unama-pipeline-final -n pipeline-final get pods,svc -o wide
+      - name: Smoke E2E via NodePort
+        run: |
+          curl -fsS http://127.0.0.1:18080/saude | tee /tmp/saude.json
+          node -e 'const s=require("/tmp/saude.json"); if(s.status!=="ok" || s.versao!==process.env.TAG) process.exit(1)'
+          curl -fsS 'http://127.0.0.1:18080/api/soma?a=2&b=3' | tee /tmp/soma.json
+          node -e 'if(require("/tmp/soma.json").resultado!==5) process.exit(1)'
+      - name: Diagnostico em caso de falha
+        if: failure()
+        run: |
+          kubectl --context kind-unama-pipeline-final -n pipeline-final get pods,svc -o wide || true
+          kubectl --context kind-unama-pipeline-final -n pipeline-final describe pods || true
+      - name: Encerrar somente o cluster do job
+        if: always()
+        run: |
+          if [ -x /tmp/kind ]; then /tmp/kind delete cluster --name unama-pipeline-final; fi

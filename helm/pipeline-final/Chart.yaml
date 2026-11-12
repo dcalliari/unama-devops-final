@@ -1,0 +1,6 @@
+apiVersion: v2
+name: pipeline-final
+description: API didatica com logs estruturados e sondas de saude
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

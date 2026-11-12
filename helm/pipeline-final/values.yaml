@@ -1,0 +1,18 @@
+replicaCount: 2
+image:
+  repository: localhost:15000/pipeline-final
+  tag: dev
+  pullPolicy: IfNotPresent
+service:
+  type: NodePort
+  port: 80
+  targetPort: 3000
+  nodePort: 30080
+demoMode: true
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi

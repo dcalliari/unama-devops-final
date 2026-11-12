@@ -21,7 +21,7 @@ foi adaptada para Node.js padrão, sem dependências externas, e recebe testes,
 logs NDJSON e cenários controlados de erro e latência.
 
 O repositório e o pacote GHCR são privados. O GitHub Actions é acionado por
-push na branch acadêmica ou por workflow_dispatch. A imagem usa a tag de
+push na branch main ou por workflow_dispatch. A imagem usa a tag de
 commit completo. O cluster efêmero recebe a imagem recém-construída por
 `kind load docker-image`, sem guardar credenciais de registry no Kubernetes.
 O push no GHCR é uma etapa anterior e obrigatória, não uma publicação simulada.

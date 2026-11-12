@@ -3,7 +3,7 @@
 Laboratório acadêmico local que integra testes, Docker, registry, Jenkins,
 Kubernetes/Helm e Filebeat/Elasticsearch/Kibana. Não usa serviços pagos.
 O `Jenkinsfile` implementa CI e CD no laboratório. O workflow
-`.github/workflows/main.yml` executa testes, build, publicação privada no
+`.github/workflows/main.yml` executa testes, build, publicação no
 GHCR e deploy Helm num Kind efêmero do próprio runner GitHub. O runner
 hospedado não recebe acesso à máquina local.
 
@@ -20,8 +20,9 @@ O código anterior foi somente consultado e permanece intacto. A aplicação
 foi adaptada para Node.js padrão, sem dependências externas, e recebe testes,
 logs NDJSON e cenários controlados de erro e latência.
 
-O repositório e o pacote GHCR são privados. O GitHub Actions é acionado por
-push na branch main ou por workflow_dispatch. A imagem usa a tag de
+O repositório é público: <https://github.com/dcalliari/unama-devops-final>.
+O GitHub Actions é acionado por push na branch main ou por workflow_dispatch.
+O workflow publica no GHCR sem impor uma visibilidade ao pacote. A imagem usa a tag de
 commit completo. O cluster efêmero recebe a imagem recém-construída por
 `kind load docker-image`, sem guardar credenciais de registry no Kubernetes.
 O push no GHCR é uma etapa anterior e obrigatória, não uma publicação simulada.
@@ -163,5 +164,5 @@ docker compose -f observability/compose.yaml down
 3. 3:00 a 5:00: Jenkins, build, push no registry e tag rastreável.
 4. 5:00 a 6:30: Helm, duas réplicas, sondas e acesso via NodePort.
 5. 6:30 a 8:30: requisições, Filebeat e dashboard com status e latência.
-6. 8:30 a 10:00: evidência E2E, limites locais, privacidade da publicação e
+6. 8:30 a 10:00: evidência E2E, limites locais, rastreabilidade da publicação e
    melhorias necessárias para produção.

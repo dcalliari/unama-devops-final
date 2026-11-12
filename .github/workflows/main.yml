@@ -25,16 +25,12 @@ jobs:
         run: node --test app/server.test.js
       - name: Build Docker
         run: docker build --pull -t "$IMAGE:$TAG" app
-      - name: Login efemero e push no GHCR privado
+      - name: Login efemero e push no GHCR
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker push "$IMAGE:$TAG"
-          curl -fsS -H "Authorization: Bearer $GHCR_TOKEN" -H 'Accept: application/vnd.github+json' \
-            "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ github.event.repository.name }}" \
-            | jq '{name,visibility,package_type}' | tee /tmp/ghcr-privacy.json
-          jq -e '.visibility == "private"' /tmp/ghcr-privacy.json
           docker logout ghcr.io
       - name: Ferramentas do cluster efemero
         run: |

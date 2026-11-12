@@ -9,6 +9,10 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   apiServerAddress: 127.0.0.1
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      config_path = "/etc/containerd/certs.d"
 nodes:
   - role: control-plane
     extraPortMappings:
@@ -30,6 +34,12 @@ for node in $(kind get nodes --name "$CLUSTER"); do
   docker exec "$node" mkdir -p /etc/containerd/certs.d/localhost:15000
   printf '[host."http://unama-pipeline-final-registry:5000"]\n  capabilities = ["pull", "resolve"]\n' |
     docker exec -i "$node" sh -c 'cat > /etc/containerd/certs.d/localhost:15000/hosts.toml'
+  # Clusters criados antes deste patch tambem precisam habilitar a leitura de hosts.toml.
+  if ! docker exec "$node" containerd config dump 2>/dev/null | grep -q "config_path = .*etc/containerd/certs.d"; then
+    printf '\n[plugins."io.containerd.grpc.v1.cri".registry]\n  config_path = "/etc/containerd/certs.d"\n' |
+      docker exec -i "$node" sh -c 'cat >> /etc/containerd/config.toml'
+    docker exec "$node" systemctl restart containerd
+  fi
 done
 kubectl --context "$CONTEXT" create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl --context "$CONTEXT" apply -f -
 for i in $(seq 1 120); do

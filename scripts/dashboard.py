@@ -19,18 +19,18 @@ def visualization(id_, title, type_, aggs, params=None):
     }, 'references': refs})
 
 
-visualization('pf-count', 'Total de requisicoes', 'metric', [{'id': '1', 'enabled': True, 'type': 'count', 'schema': 'metric', 'params': {}}], {'fontSize': 42})
-visualization('pf-latency', 'Tempo medio de resposta (ms)', 'metric', [{'id': '1', 'enabled': True, 'type': 'avg', 'schema': 'metric', 'params': {'field': 'response_time_ms', 'customLabel': 'Media (ms)'}}], {'fontSize': 42})
-visualization('pf-status', 'Requisicoes por status HTTP', 'pie', [
+visualization('pf-count', 'Total de requisições', 'metric', [{'id': '1', 'enabled': True, 'type': 'count', 'schema': 'metric', 'params': {}}], {'fontSize': 42})
+visualization('pf-latency', 'Tempo médio de resposta (ms)', 'metric', [{'id': '1', 'enabled': True, 'type': 'avg', 'schema': 'metric', 'params': {'field': 'response_time_ms', 'customLabel': 'Média (ms)'}}], {'fontSize': 42})
+visualization('pf-status', 'Requisições por status HTTP', 'pie', [
     {'id': '1', 'enabled': True, 'type': 'count', 'schema': 'metric', 'params': {}},
     {'id': '2', 'enabled': True, 'type': 'terms', 'schema': 'segment', 'params': {'field': 'http.response.status_code', 'size': 10, 'order': 'desc', 'orderBy': '1'}},
 ], {'addLegend': True, 'addTooltip': True, 'isDonut': True, 'legendPosition': 'right'})
-visualization('pf-routes', 'Tempo medio por rota (ms)', 'table', [
-    {'id': '1', 'enabled': True, 'type': 'avg', 'schema': 'metric', 'params': {'field': 'response_time_ms', 'customLabel': 'Media (ms)'}},
+visualization('pf-routes', 'Tempo médio por rota (ms)', 'table', [
+    {'id': '1', 'enabled': True, 'type': 'avg', 'schema': 'metric', 'params': {'field': 'response_time_ms', 'customLabel': 'Média (ms)'}},
     {'id': '2', 'enabled': True, 'type': 'terms', 'schema': 'bucket', 'params': {'field': 'url.path', 'size': 10, 'order': 'desc', 'orderBy': '1'}},
 ], {'perPage': 10, 'showTotal': False, 'showMetricsAtAllLevels': False})
 objects.append({'type': 'search', 'id': 'pf-live-logs', 'attributes': {
-    'title': 'Logs da aplicacao em tempo real', 'description': 'Atualizacao automatica a cada 5 segundos',
+    'title': 'Logs da aplicação em tempo real', 'description': 'Atualização automática a cada 5 segundos',
     'columns': ['url.path', 'http.response.status_code', 'response_time_ms', 'service.version'],
     'sort': [['@timestamp', 'desc']], 'grid': {}, 'hideChart': True,
     'kibanaSavedObjectMeta': {'searchSourceJSON': source},
